@@ -25,6 +25,8 @@ import (
 // Program option vars:
 var (
 	daemonURLs        []string
+	metaURL           string
+	nativeClient      bool
 	replicationFactor int
 	backoff           time.Duration
 	useGzip           bool
@@ -70,6 +72,8 @@ func init() {
 		panic(fmt.Errorf("unable to decode config: %s", err))
 	}
 
+	metaURL = viper.GetString("meta-url")
+	nativeClient = viper.GetBool("native")
 	csvDaemonURLs = viper.GetString("urls")
 	replicationFactor = viper.GetInt("replication-factor")
 	consistency = viper.GetString("consistency")
@@ -95,7 +99,11 @@ func (b *benchmark) GetDataSource() targets.DataSource {
 }
 
 func (b *benchmark) GetBatchFactory() targets.BatchFactory {
-	return &factory{}
+	if nativeClient {
+		return &nativeFactory{}
+	} else {
+		return &factory{}
+	}
 }
 
 func (b *benchmark) GetPointIndexer(_ uint) targets.PointIndexer {
@@ -103,7 +111,11 @@ func (b *benchmark) GetPointIndexer(_ uint) targets.PointIndexer {
 }
 
 func (b *benchmark) GetProcessor() targets.Processor {
-	return &processor{}
+	if nativeClient {
+		return &nativeProcessor{}
+	} else {
+		return &processor{}
+	}
 }
 
 func (b *benchmark) GetDBCreator() targets.DBCreator {

@@ -3,13 +3,14 @@ package load
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/timescale/tsbs/pkg/targets"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/timescale/tsbs/pkg/targets"
 
 	"github.com/spf13/pflag"
 	"github.com/timescale/tsbs/load/insertstrategy"
@@ -44,6 +45,8 @@ type BenchmarkRunnerConfig struct {
 	ChannelCapacity uint          `yaml:"channel-capacity" mapstructure:"channel-capacity" json:"channel-capacity"`
 	InsertIntervals string        `yaml:"insert-intervals" mapstructure:"insert-intervals" json:"insert-intervals"`
 	ResultsFile     string        `yaml:"results-file" mapstructure:"results-file" json:"results-file"`
+	MetaURL         string        `yaml:"meta-url" mapstructure:"meta-url" json:"meta-url"`
+	NativeClient    bool          `yaml:"native" mapstructure:"native" json:"native"`
 	// deprecated, should not be used in other places other than tsbs_load_xx commands
 	FileName string `yaml:"file" mapstructure:"file" json:"file"`
 	Seed     int64  `yaml:"seed" mapstructure:"seed" json:"seed"`
@@ -64,6 +67,8 @@ func (c BenchmarkRunnerConfig) AddToFlagSet(fs *pflag.FlagSet) {
 	fs.String("insert-intervals", "", "Time to wait between each insert, default '' => all workers insert ASAP. '1,2' = worker 1 waits 1s between inserts, worker 2 and others wait 2s")
 	fs.Bool("hash-workers", false, "Whether to consistently hash insert data to the same workers (i.e., the data for a particular host always goes to the same worker)")
 	fs.String("results-file", "", "Write the test results summary json to this file")
+	fs.String("meta-url", "", "The meta url")
+	fs.Bool("native", false, "use native grpc client")
 }
 
 type BenchmarkRunner interface {
@@ -283,6 +288,7 @@ func (l *CommonBenchmarkRunner) work(b targets.Benchmark, wg *sync.WaitGroup, c 
 	for batch := range c.toWorker {
 		startedWorkAt := time.Now()
 		metricCnt, rowCnt := proc.ProcessBatch(batch, l.DoLoad)
+		// fmt.Printf("metricCnt: %d, rowCnt: %d\n", metricCnt, rowCnt)
 		atomic.AddUint64(&l.metricCnt, metricCnt)
 		atomic.AddUint64(&l.rowCnt, rowCnt)
 		c.sendToScanner()

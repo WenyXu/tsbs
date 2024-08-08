@@ -14,7 +14,12 @@ type dbCreator struct {
 }
 
 func (d *dbCreator) Init() {
-	d.daemonURL = daemonURLs[0] // pick first one since it always exists
+	if nativeClient {
+		d.daemonURL = metaURL
+	} else {
+		d.daemonURL = daemonURLs[0]
+	}
+	fmt.Printf("url: %s\n", d.daemonURL)
 }
 
 func (d *dbCreator) DBExists(dbName string) bool {
@@ -22,6 +27,7 @@ func (d *dbCreator) DBExists(dbName string) bool {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("dbs: %v\n", dbs)
 
 	for _, db := range dbs {
 		if db == loader.DatabaseName() {
@@ -93,7 +99,7 @@ func (d *dbCreator) CreateDB(dbName string) error {
 	// does the body need to be read into the void?
 
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("bad db create")
+		return fmt.Errorf("bad db create, code: %d", resp.StatusCode)
 	}
 
 	time.Sleep(time.Second)

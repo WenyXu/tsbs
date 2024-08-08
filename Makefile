@@ -8,7 +8,7 @@ GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 GOFMT=$(GOCMD) fmt
 
-.PHONY: all generators loaders runners lint fmt checkfmt
+.PHONY: all generators loaders runners lint fmt checkfmt build
 
 all: generators loaders runners
 
